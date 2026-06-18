@@ -32,7 +32,7 @@
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    /* テーブルのハイライトアニメーション */
+    /* テーブルのハイライト */
     .highlight-cell {
       background-color: rgba(37, 99, 235, 0.18) !important;
       border: 2px solid #2563eb !important;
@@ -49,16 +49,37 @@
 
   <!-- ヘッダー -->
   <header class="bg-gradient-to-r from-slate-900 to-blue-900 text-white shadow-md py-5 px-6">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="bg-blue-600 text-xs font-bold uppercase px-2 py-1 rounded">JIS B 9718:2013</span>
-          <span class="text-xs text-slate-300">ISO 13857 適合</span>
+    <div class="max-w-7xl mx-auto flex flex-col gap-4">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="bg-blue-600 text-xs font-bold uppercase px-2 py-1 rounded">JIS B 9718:2013</span>
+            <span class="text-xs text-slate-300">ISO 13857 適合</span>
+          </div>
+          <h1 class="text-2xl md:text-3xl font-bold mt-1 tracking-tight">機械類の安全性 — 危険区域に上肢及び下肢が到達することを防止するための安全距離</h1>
         </div>
-        <h1 class="text-2xl md:text-3xl font-bold mt-1 tracking-tight">機械類の安全性 — 危険区域に上肢及び下肢が到達することを防止するための安全距離</h1>
+        <div class="text-right hidden md:block">
+          <p class="text-sm text-slate-300">安全設計・リスクアセスメント支援ツール</p>
+        </div>
       </div>
-      <div class="text-right">
-        <p class="text-sm text-slate-300">安全設計・リスクアセスメント支援ツール</p>
+      
+      <!-- 規格間相互ナビゲーションリンク -->
+      <div class="border-t border-white/10 pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="flex space-x-2 sm:space-x-6 text-sm sm:text-base font-medium">
+          <!-- JIS B 9715 接近速度リンク (ホバー状態) -->
+          <a href="jis_b_9715.html" class="text-slate-300 hover:text-white hover:border-b-2 hover:border-slate-400 pb-1 px-2 transition-all flex items-center gap-1">
+            <i class="fa-solid fa-person-running text-xs opacity-70"></i>
+            JIS B 9715 (接近速度)
+          </a>
+          <!-- JIS B 9718 安全距離 (カレント表示でハイライト) -->
+          <a href="#" class="text-blue-300 border-b-2 border-blue-300 pb-1 px-2 flex items-center gap-1">
+            <i class="fa-solid fa-shield-halved text-xs"></i>
+            JIS B 9718 (安全距離)
+          </a>
+        </div>
+        <div class="text-xs text-slate-400">
+          安全規格群との統合検討
+        </div>
       </div>
     </div>
   </header>
@@ -219,29 +240,25 @@
     
     // 各ケースのパラメータ定義
     const params = {
-      // 1. 保護構造物越え
       case1: {
         a: 1400, // 危険源の高さ (0 - 2700)
         b: 1600, // 保護構造物の高さ (1000 - 2700)
         c: 1100  // 危険源への水平距離 (実際の値)
       },
-      // 2. 周囲への到達（動きが制限された状態）
       case2: {
-        reachType: 'finger', // 'finger', 'hand', 'arm'
-        r: 120,             // 制限半径
-        actualDistance: 100 // 実際の到達・配置距離
+        reachType: 'finger',
+        r: 120,
+        actualDistance: 100
       },
-      // 3. 定形開口部を通過（14歳以上）
       case3: {
-        shape: 'square',   // 'square', 'slot', 'round'
-        e: 20,             // 開口部の寸法 (1 - 120)
-        actualDistance: 120 // 実際の安全距離
+        shape: 'square',
+        e: 20,
+        actualDistance: 120
       },
-      // 4. 下肢による定形開口部を通過
       case4: {
-        shape: 'slot',     // 'slot', 'square'
-        e: 50,             // 開口部の寸法 (0 - 300)
-        actualDistance: 200 // 実際の安全距離
+        shape: 'slot',
+        e: 50,
+        actualDistance: 200
       }
     };
 
@@ -253,7 +270,7 @@
         sliders: [
           { key: 'a', label: '危険区域の高さ (a)', min: 0, max: 2700, step: 100, unit: 'mm' },
           { key: 'b', label: '保護構造物の高さ (b)', min: 1000, max: 2700, step: 100, unit: 'mm' },
-          { key: 'c', label: '水平距離 (c) [設計値]', min: 0, max: 2000, step: 50, unit: 'mm' }
+          { key: 'c', label: '水平距離 (c) [設計値]', min: 0, max: 1500, step: 50, unit: 'mm' }
         ]
       },
       case2: {
@@ -296,13 +313,10 @@
       }
     };
 
-    // --- JIS B 9718 表2 データ（保護構造物越えの到達距離 - 高リスク） ---
-    // 横軸 (列)：危険区域の高さ a (2700, 2600, 2400, 2200, 2000, 1800, 1600, 1400, 1200, 1000, 0)
-    // 縦軸 (行)：保護構造物の高さ b (2700, 2500, 2400, 2200, 2000, 1800, 1600, 1400, 1200, 1000)
+    // --- JIS B 9718 表2 データ ---
     const jisTable2 = {
       b_vals: [2700, 2500, 2400, 2200, 2000, 1800, 1600, 1400, 1200, 1000],
       a_vals: [2700, 2600, 2400, 2200, 2000, 1800, 1600, 1400, 1200, 1000, 0],
-      // [b][a] の完全なマトリクスデータ (mm)
       data: {
         2700: { 2700: 0, 2600: 0, 2400: 0, 2200: 0, 2000: 0, 1800: 0, 1600: 0, 1400: 0, 1200: 0, 1000: 0, 0: 0 },
         2500: { 2700: 0, 2600: 100, 2400: 100, 2200: 100, 2000: 100, 1800: 100, 1600: 100, 1400: 100, 1200: 100, 1000: 100, 0: 0 },
@@ -361,7 +375,6 @@
     // --- 下肢による定形開口部を通過しての到達データ ---
     const jisTable4Data = {
       slot: [
-        { min: 0, max: 0, sr: 0 },
         { min: 0, max: 5, sr: 0 },
         { min: 5, max: 15, sr: 10 },
         { min: 15, max: 35, sr: 80 },
@@ -372,7 +385,6 @@
         { min: 189, max: 300, sr: 1100 }
       ],
       square: [
-        { min: 0, max: 0, sr: 0 },
         { min: 0, max: 5, sr: 0 },
         { min: 5, max: 25, sr: 0 },
         { min: 25, max: 35, sr: 50 },
@@ -386,12 +398,11 @@
       ]
     };
 
-
     // --- タブ切り替え関数 ---
     function switchTab(tabNum) {
       currentTab = tabNum;
       
-      // ボタンの見た目更新
+      // ボタンスタイル更新
       for (let i = 1; i <= 4; i++) {
         const tabBtn = document.getElementById(`tab-${i}`);
         const numCircle = tabBtn.querySelector('div');
@@ -404,16 +415,12 @@
         }
       }
 
-      // ビジュアルタイトル・説明文
       const meta = metadata[`case${tabNum}`];
       document.getElementById('visual-title').innerText = meta.title;
       document.getElementById('case-description').innerText = meta.desc;
 
-      // スライダー生成
       generateSliders();
-      // テーブルロード
       loadTable();
-      // 初期描画
       updateApp();
     }
 
@@ -429,7 +436,6 @@
         wrapper.className = "flex flex-col gap-2";
 
         if (slider.type === 'select') {
-          // セレクトボックスの生成
           wrapper.innerHTML = `
             <label class="text-sm font-semibold text-slate-700">${slider.label}</label>
             <select id="param-${slider.key}" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" onchange="onParamChange('${slider.key}', this.value)">
@@ -437,7 +443,6 @@
             </select>
           `;
         } else {
-          // 数値スライダーの生成
           const val = caseParams[slider.key];
           wrapper.innerHTML = `
             <div class="flex justify-between items-center">
@@ -467,14 +472,12 @@
       const numVal = isNaN(value) ? value : Number(value);
       params[`case${currentTab}`][key] = numVal;
       
-      // 値表示を更新
       const valLabel = document.getElementById(`val-${key}`);
       if (valLabel) {
         const sliderMeta = metadata[`case${currentTab}`].sliders.find(s => s.key === key);
         valLabel.innerText = `${numVal}${sliderMeta.unit}`;
       }
 
-      // 特殊連動: ケース2でreachTypeが変更された場合、到達半径rを固定値に変更
       if (currentTab === 2 && key === 'reachType') {
         const rVal = jisTableReach[numVal].r;
         params.case2.r = rVal;
@@ -484,7 +487,6 @@
         if (rLabel) rLabel.innerText = `${rVal}mm`;
       }
 
-      // アプリ全体を再計算・再描画
       updateApp();
     }
 
@@ -496,10 +498,8 @@
       let safetyTip = "";
 
       if (currentTab === 1) {
-        // --- ケース1: 保護構造物越えの安全距離判定 ---
         const { a, b, c } = params.case1;
         
-        // aとbが規格テーブルの範囲内かフィッティング
         const matchedA = findNearestJisVal(a, jisTable2.a_vals);
         const matchedB = findNearestJisVal(b, jisTable2.b_vals);
         
@@ -508,34 +508,30 @@
         
         isSafe = actualD >= requiredD;
         if (requiredD === 0) {
-          safetyTip = "安全です。保護構造物が高いため乗り越えによる危険区域への進入は生じません、または危険源が十分高い位置にあります。";
+          safetyTip = "安全です。保護構造物が高いため、乗り越えによる危険区域への進入は想定されません。";
         } else {
           safetyTip = isSafe 
-            ? `防護壁の高さ ${b}mm に対して、JIS要求の安全距離 ${requiredD}mm を十分に確保（${actualD}mm）できています。`
-            : `防護壁の高さ ${b}mm、危険区域高さ ${a}mm に対し、安全距離が不足しています。あと ${requiredD - actualD}mm 水平距離を離すか、防護壁を高くしてください。`;
+            ? `防護壁の高さ ${b}mm に対し、安全要求距離 ${requiredD}mm を満たしています（設計値 ${actualD}mm）。`
+            : `防護壁の高さ ${b}mm に対して、安全距離が不足しています。あと ${requiredD - actualD}mm 水平に離す必要があります。`;
         }
 
-        // テーブルハイライト処理
         highlightTable1(matchedA, matchedB);
-        // SVG描画
         drawCase1();
 
       } else if (currentTab === 2) {
-        // --- ケース2: 周囲への到達 ---
         const { reachType, r, actualDistance } = params.case2;
         requiredD = r;
         actualD = actualDistance;
         isSafe = actualD >= requiredD;
 
         safetyTip = isSafe
-          ? `${jisTableReach[reachType].desc}に対して十分な奥行き（${r}mm 以上）があり、指や手が危険源に届きません。`
-          : `${jisTableReach[reachType].desc}の最大到達距離は ${r}mm です。現在の安全距離は ${actualD}mm で、指や手が届く危険があります。`;
+          ? `${jisTableReach[reachType].desc}に対して十分な奥行き（${r}mm 以上）があり安全です。`
+          : `${jisTableReach[reachType].desc}による最大到達域は ${r}mm です。現在の設計距離では危険域に侵入します。`;
 
         highlightTable2(reachType);
         drawCase2();
 
       } else if (currentTab === 3) {
-        // --- ケース3: 定形開口部を通過 ---
         const { shape, e, actualDistance } = params.case3;
         
         const range = jisTable3Data[shape].find(r => e > r.min && e <= r.max);
@@ -551,7 +547,6 @@
         drawCase3();
 
       } else if (currentTab === 4) {
-        // --- ケース4: 下肢による開口部通過 ---
         const { shape, e, actualDistance } = params.case4;
         
         const range = jisTable4Data[shape].find(r => e >= r.min && e <= r.max);
@@ -573,7 +568,6 @@
         drawCase4();
       }
 
-      // --- 判定カードのDOM更新 ---
       document.getElementById('req-distance-val').innerText = `${requiredD} mm`;
       document.getElementById('act-distance-val').innerText = `${actualD} mm`;
       
@@ -599,7 +593,6 @@
       }
     }
 
-    // 規格値の一番近い目盛りに丸める
     function findNearestJisVal(val, arr) {
       return arr.reduce((prev, curr) => Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev);
     }
@@ -610,7 +603,6 @@
       container.innerHTML = '';
 
       if (currentTab === 1) {
-        // --- テーブル1: 保護構造物越えの安全距離（規格表通りの正確なレイアウト） ---
         let html = `
           <table class="w-full text-left border-collapse min-w-[800px] text-[11px]">
             <thead>
@@ -640,7 +632,6 @@
         container.innerHTML = html;
 
       } else if (currentTab === 2) {
-        // --- テーブル2: 周囲への到達 ---
         let html = `
           <table class="w-full text-left border-collapse text-xs">
             <thead>
@@ -672,7 +663,6 @@
         container.innerHTML = html;
 
       } else if (currentTab === 3) {
-        // --- テーブル3: 定形開口部（14歳以上） ---
         let html = `
           <table class="w-full text-left border-collapse text-xs min-w-[650px]">
             <thead>
@@ -714,7 +704,6 @@
         container.innerHTML = html;
 
       } else if (currentTab === 4) {
-        // --- テーブル4: 下肢開口部 ---
         let html = `
           <table class="w-full text-left border-collapse text-xs min-w-[650px]">
             <thead>
@@ -853,34 +842,27 @@
     // --- SVGシミュレータ描画コード (JIS対応) ---
     // ==========================================
 
-    // 1. 保護構造物越えの到達 SVG (a: 0-2700mm に最適化)
     function drawCase1() {
       const svg = document.getElementById('simulator-svg');
       const { a, b, c } = params.case1;
 
-      // 1px = 10mm にスケールダウン (2700mmを270pxで表現)
       const scale = 0.095; 
       const startX = 80;
       const floorY = 320;
-
-      // 壁・危険源の位置
       const wallX = 350;
-      const hazardX = wallX + (c * scale);
       
-      // 高さ座標 (床面からの減算)
+      const hazardX = wallX + (c * scale);
       const hazardY = floorY - (a * scale);
       const wallY = floorY - (b * scale);
 
-      // 必要最小安全距離の取得
       const matchedA = findNearestJisVal(a, jisTable2.a_vals);
       const matchedB = findNearestJisVal(b, jisTable2.b_vals);
       const reqC = jisTable2.data[matchedB][matchedA];
+      
       const reqX = wallX + (reqC * scale);
-
       const isSafe = c >= reqC;
 
       let svgContent = `
-        <!-- グリッド背景 -->
         <defs>
           <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
             <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/>
@@ -892,7 +874,7 @@
         <line x1="50" y1="${floorY}" x2="750" y2="${floorY}" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
         <text x="60" y="${floorY + 22}" fill="#64748b" font-size="10" font-weight="bold">基準床面 (Level 0)</text>
 
-        <!-- 危険区域（背景の赤いモヤ） -->
+        <!-- 危険区域 -->
         <rect x="${hazardX - 35}" y="${hazardY - 35}" width="70" height="70" rx="35" fill="#ef4444" fill-opacity="0.12" />
         <circle cx="${hazardX}" cy="${hazardY}" r="16" fill="#ef4444" fill-opacity="0.3" class="animate-pulse" />
         <circle cx="${hazardX}" cy="${hazardY}" r="4.5" fill="#ef4444" />
@@ -923,51 +905,44 @@
 
         <!-- JIS要求安全距離ライン -->
         ${reqC > 0 ? `
-          <line x1="${reqX}" y1="${floorY}" x2="${reqX}" y2="${floorY - 60}" stroke="#ef4444" stroke-width="2" />
-          <polygon points="${reqX},${floorY - 60} ${reqX - 4},${floorY - 68} ${reqX + 4},${floorY - 68}" fill="#ef4444" />
-          <text x="${reqX}" y="${floorY - 73}" fill="#ef4444" font-size="10" font-weight="bold" text-anchor="middle">JIS要求:${reqC}mm</text>
+          <rect x="${wallX}" y="${floorY - 4}" width="${reqC * scale}" height="8" fill="#ef4444" fill-opacity="0.2" />
+          <line x1="${reqX}" y1="${floorY}" x2="${reqX}" y2="${floorY - 65}" stroke="#ef4444" stroke-width="2.5" />
+          <polygon points="${reqX},${floorY - 65} ${reqX - 5},${floorY - 73} ${reqX + 5},${floorY - 73}" fill="#ef4444" />
+          <text x="${reqX}" y="${floorY - 78}" fill="#ef4444" font-size="10" font-weight="bold" text-anchor="middle">JIS要求:${reqC}mm</text>
         ` : `
-          <text x="${wallX + 100}" y="${floorY - 60}" fill="#10b981" font-size="10" font-weight="bold">要求安全距離: 0mm (到達不可)</text>
+          <text x="${wallX + 10}" y="${floorY - 50}" fill="#10b981" font-size="10" font-weight="bold">要求安全距離: 0mm (進入不可)</text>
         `}
       `;
 
-      // --- 人体シルエットと到達する手の動的シミュレーション ---
+      // 人体
       const shoulderX = wallX - 110;
-      const shoulderY = floorY - (1450 * scale); // 肩の高さ固定
-
-      // 肘関節、手の位置を動的に連動
-      const armElbowX = wallX - 15;
-      const armElbowY = wallY - 10;
+      const shoulderY = floorY - (1450 * scale);
+      const armElbowX = wallX - 10;
+      const armElbowY = wallY - 8;
 
       let handX = shoulderX;
       let handY = shoulderY;
 
       if (reqC === 0) {
-        // 要求安全距離が0の時、手は壁を越えられないか危険源が十分遠い
-        handX = wallX + 20;
-        handY = wallY + 30;
+        handX = wallX + 15;
+        handY = wallY + 40;
       } else if (!isSafe) {
-        // 安全ではない場合：手が危険区域に接触する状態
-        handX = hazardX - 12;
+        handX = hazardX - 10;
         handY = hazardY + 8;
       } else {
-        // 安全な場合：手が防護壁を越えて力尽きている
-        handX = wallX + (reqC * scale) * 0.5;
-        handY = wallY + 40;
+        handX = wallX + (reqC * scale) * 0.55;
+        handY = wallY + 50;
       }
 
       svgContent += `
-        <!-- 人体 -->
         <circle cx="${shoulderX - 25}" cy="${shoulderY - 45}" r="20" fill="#94a3b8" />
         <path d="M ${shoulderX - 45} ${shoulderY} L ${shoulderX - 5} ${shoulderY} L ${shoulderX - 15} ${floorY} L ${shoulderX - 45} ${floorY} Z" fill="#cbd5e1" />
         <circle cx="${shoulderX}" cy="${shoulderY}" r="7" fill="#64748b" />
 
-        <!-- 腕 (保護壁を越える軌跡) -->
         <line x1="${shoulderX}" y1="${shoulderY}" x2="${armElbowX}" y2="${armElbowY}" stroke="#64748b" stroke-width="11" stroke-linecap="round" />
         <circle cx="${armElbowX}" cy="${armElbowY}" r="6.5" fill="#475569" />
         <line x1="${armElbowX}" y1="${armElbowY}" x2="${handX}" y2="${handY}" stroke="#64748b" stroke-width="8.5" stroke-linecap="round" />
 
-        <!-- 到達点インジケータ -->
         <circle cx="${handX}" cy="${handY}" r="4" fill="#ef4444" />
         <circle cx="${handX}" cy="${handY}" r="8" fill="none" stroke="#ef4444" stroke-width="1.5" class="animate-ping" />
       `;
@@ -975,7 +950,6 @@
       svg.innerHTML = svgContent;
     }
 
-    // 2. 動きを制限した周囲への到達 SVG
     function drawCase2() {
       const svg = document.getElementById('simulator-svg');
       const { reachType, r, actualDistance } = params.case2;
@@ -1060,7 +1034,6 @@
       svg.innerHTML = svgContent;
     }
 
-    // 3. 定形開口部を通過しての到達 (14歳以上) SVG
     function drawCase3() {
       const svg = document.getElementById('simulator-svg');
       const { shape, e, actualDistance } = params.case3;
@@ -1143,7 +1116,6 @@
       svg.innerHTML = svgContent;
     }
 
-    // 4. 下肢による定形開口部を通過しての到達 SVG
     function drawCase4() {
       const svg = document.getElementById('simulator-svg');
       const { shape, e, actualDistance } = params.case4;
