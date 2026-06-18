@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JIS B 9715 安全距離計算シミュレータ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f8fafc; }
+        input[type="range"] { appearance: none; background: #e2e8f0; height: 6px; border-radius: 3px; outline: none; width: 100%; }
+        input[type="range"]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; background: #3b82f6; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: background 0.1s; }
+        input[type="range"]::-webkit-slider-thumb:hover { background: #2563eb; }
+        input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: #3b82f6; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- ナビゲーションバー -->
+    <nav class="bg-slate-900 text-white shadow-md z-10">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center py-3 gap-3">
+                <div class="text-lg sm:text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-blue-400"></i>
+                    機械安全設計ツール
+                </div>
+                <div class="flex space-x-2 sm:space-x-6 text-sm sm:text-base font-medium">
+                    <!-- カレントページはハイライト -->
+                    <a href="jis_b_9715.html" class="text-blue-300 border-b-2 border-blue-300 pb-1 px-2">JIS B 9715 (接近速度)</a>
+                    <!-- リンク先 -->
+                    <a href="jis_b_9718.html" class="text-slate-300 hover:text-white hover:border-b-2 hover:border-slate-400 pb-1 px-2 transition-all">JIS B 9718 (下肢の到達)</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow p-4 sm:p-6 lg:p-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">JIS B 9715:2006 (ISO 13855) 安全距離シミュレータ</h1>
+                <p class="text-slate-600 mt-1">身体の部位の接近速度に基づく安全防護物の配置のための安全距離を計算します。</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- 左側：パラメータ操作部 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-5">
+                    <h2 class="text-lg font-bold text-slate-800 border-b pb-2"><i class="fa-solid fa-sliders text-blue-500 mr-2"></i>パラメータ設定</h2>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">接近の種類</label>
+                        <select id="approachType" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow">
+                            <option value="orthogonal_high">直角方向 (検出能力 d ≦ 40mm)</option>
+                            <option value="orthogonal_low">直角方向 (検出能力 40mm < d ≦ 70mm)</option>
+                            <option value="parallel">平行方向の接近</option>
+                        </select>
+                    </div>
+
+                    <div id="group-t">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-sm font-semibold text-slate-700">システム停止時間 T (s)</label>
+                            <span class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="val-t">0.50 s</span>
+                        </div>
+                        <input type="range" id="param-t" min="0.01" max="2.00" step="0.01" value="0.50">
+                    </div>
+
+                    <div id="group-d">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-sm font-semibold text-slate-700">センサの検出能力 d (mm)</label>
+                            <span class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="val-d">30 mm</span>
+                        </div>
+                        <input type="range" id="param-d" min="14" max="40" step="1" value="30">
+                    </div>
+
+                    <div id="group-h" style="display:none;">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-sm font-semibold text-slate-700">検出領域の高さ H (mm)</label>
+                            <span class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="val-h">200 mm</span>
+                        </div>
+                        <input type="range" id="param-h" min="0" max="1000" step="10" value="200">
+                    </div>
+
+                    <hr class="border-slate-200">
+
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-sm font-semibold text-slate-700">実際のセンサ設置距離 (mm)</label>
+                            <span class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="val-actual">1000 mm</span>
+                        </div>
+                        <input type="range" id="param-actual" min="100" max="3000" step="10" value="1000">
+                    </div>
+                    
+                    <div class="mt-auto pt-4">
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                            <strong class="text-slate-700 block mb-1"><i class="fa-solid fa-calculator mr-1"></i>計算式: S = K × T + C</strong>
+                            S: 最小安全距離, K: 接近速度, T: 停止時間, C: 追加距離
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：描画・判定部 -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                    <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mb-4"><i class="fa-solid fa-chart-line text-blue-500 mr-2"></i>シミュレーション結果</h2>
+                    
+                    <div id="judgment" class="p-4 rounded-lg font-bold text-center text-lg mb-2 transition-colors duration-300">判定中...</div>
+                    <div id="details" class="text-center text-slate-600 mb-6 font-medium text-sm"></div>
+                    
+                    <div class="w-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden relative flex-grow min-h-[300px]">
+                        <svg viewBox="0 -50 800 300" id="canvas" class="w-full h-full block">
+                            <!-- 危険源 -->
+                            <rect x="0" y="0" width="50" height="200" fill="#ef4444"></rect>
+                            <text x="25" y="100" fill="white" font-size="16" text-anchor="middle" font-weight="bold" writing-mode="vertical-rl">危険源</text>
+                            
+                            <!-- 軸とラベル -->
+                            <line x1="50" y1="200" x2="750" y2="200" stroke="#94a3b8" stroke-width="2"></line>
+                            <text x="750" y="220" font-size="12" fill="#64748b" text-anchor="end">距離 (mm)</text>
+
+                            <!-- 必要安全距離 (S) の範囲 -->
+                            <rect id="svg-s-area" x="50" y="160" width="0" height="40" fill="#fef08a" fill-opacity="0.5"></rect>
+                            <line id="svg-s-line" x1="50" y1="160" x2="50" y2="200" stroke="#eab308" stroke-width="3" stroke-dasharray="6"></line>
+                            <text id="svg-s-text" x="50" y="150" font-size="14" fill="#ca8a04" text-anchor="middle" font-weight="bold">必要安全距離 S</text>
+
+                            <!-- 実際の設置距離 -->
+                            <line id="svg-actual-line" x1="50" y1="20" x2="50" y2="200" stroke="#3b82f6" stroke-width="3"></line>
+                            <rect id="svg-sensor" x="40" y="80" width="20" height="40" fill="#3b82f6" rx="4"></rect>
+                            <text id="svg-actual-text" x="50" y="10" font-size="14" fill="#2563eb" text-anchor="middle" font-weight="bold">センサ設置位置</text>
+                            
+                            <!-- 接近の矢印 -->
+                            <g id="svg-arrow-group">
+                                <path d="M 700 100 L 650 80 L 650 120 Z" fill="#94a3b8" id="svg-arrow"></path>
+                                <text x="710" y="105" font-size="16" fill="#64748b" font-weight="bold" id="svg-arrow-text">接近</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const typeSelect = document.getElementById('approachType');
+        const tInput = document.getElementById('param-t');
+        const dInput = document.getElementById('param-d');
+        const hInput = document.getElementById('param-h');
+        const actualInput = document.getElementById('param-actual');
+        
+        const dGroup = document.getElementById('group-d');
+        const hGroup = document.getElementById('group-h');
+
+        function updateUI() {
+            const type = typeSelect.value;
+            if (type === 'orthogonal_high' || type === 'orthogonal_low') {
+                dGroup.style.display = 'block';
+                hGroup.style.display = 'none';
+                if(type === 'orthogonal_high'){
+                    dInput.min = 14;
+                    dInput.max = 40;
+                    if(dInput.value > 40) dInput.value = 40;
+                } else {
+                    dInput.min = 41;
+                    dInput.max = 70;
+                    if(dInput.value <= 40) dInput.value = 41;
+                }
+            } else if (type === 'parallel') {
+                dGroup.style.display = 'none';
+                hGroup.style.display = 'block';
+            }
+
+            document.getElementById('val-t').textContent = Number(tInput.value).toFixed(2) + ' s';
+            document.getElementById('val-d').textContent = dInput.value + ' mm';
+            document.getElementById('val-h').textContent = hInput.value + ' mm';
+            document.getElementById('val-actual').textContent = actualInput.value + ' mm';
+
+            calculateAndDraw();
+        }
+
+        function calculateAndDraw() {
+            const type = typeSelect.value;
+            const T = parseFloat(tInput.value);
+            const d = parseFloat(dInput.value);
+            const H = parseFloat(hInput.value);
+            const actualS = parseFloat(actualInput.value);
+
+            let S = 0, K = 0, C = 0;
+
+            if (type === 'orthogonal_high') {
+                C = Math.max(0, 8 * (d - 14));
+                K = 2000;
+                S = K * T + C;
+                if (S > 500) { K = 1600; S = K * T + C; }
+            } else if (type === 'orthogonal_low') {
+                C = 850; K = 1600; S = K * T + C;
+            } else if (type === 'parallel') {
+                K = 1600; C = Math.max(850, 1200 - 0.4 * H);
+                S = K * T + C;
+            }
+
+            const isSafe = actualS >= S;
+            const judgmentBox = document.getElementById('judgment');
+            if (isSafe) {
+                judgmentBox.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i>安全距離確保 (OK)';
+                judgmentBox.className = 'p-4 rounded-lg font-bold text-center text-lg mb-2 bg-green-100 text-green-800 border border-green-300 shadow-sm';
+            } else {
+                judgmentBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-2"></i>危険 - 距離不足 (NG)';
+                judgmentBox.className = 'p-4 rounded-lg font-bold text-center text-lg mb-2 bg-red-100 text-red-800 border border-red-300 shadow-sm animate-pulse';
+            }
+
+            document.getElementById('details').innerHTML = 
+                `規格上の最小安全距離 S = <span class="text-amber-600 font-bold text-lg mx-1">${Math.round(S)}</span> mm<br>` +
+                `<span class="text-xs text-slate-500">( 接近速度 K = ${K} mm/s, 追加距離 C = ${Math.round(C)} mm )</span>`;
+
+            draw(S, actualS);
+        }
+
+        function draw(S, actualS) {
+            const maxDist = Math.max(3000, S + 500, actualS + 500);
+            const scale = 650 / maxDist; 
+            const baseX = 50; 
+
+            // 安全距離
+            const sX = baseX + (S * scale);
+            document.getElementById('svg-s-area').setAttribute('width', Math.max(0, sX - baseX));
+            document.getElementById('svg-s-line').setAttribute('x1', sX);
+            document.getElementById('svg-s-line').setAttribute('x2', sX);
+            
+            let sTextX = baseX + (S * scale) / 2;
+            if (S * scale < 80) sTextX = sX + 60;
+            document.getElementById('svg-s-text').setAttribute('x', sTextX);
+
+            // 実際の距離
+            const actX = baseX + (actualS * scale);
+            document.getElementById('svg-actual-line').setAttribute('x1', actX);
+            document.getElementById('svg-actual-line').setAttribute('x2', actX);
+            document.getElementById('svg-sensor').setAttribute('x', actX - 10);
+            
+            const actText = document.getElementById('svg-actual-text');
+            if (Math.abs(actX - sX) < 80) { actText.setAttribute('y', -5); } 
+            else { actText.setAttribute('y', 10); }
+            actText.setAttribute('x', actX);
+
+            // 矢印
+            const arrowBaseX = Math.max(actX, sX) + 80;
+            const safeArrowX = Math.min(arrowBaseX, 700);
+            document.getElementById('svg-arrow').setAttribute('d', `M ${safeArrowX + 50} 100 L ${safeArrowX} 80 L ${safeArrowX} 120 Z`);
+            document.getElementById('svg-arrow-text').setAttribute('x', safeArrowX + 60);
+        }
+
+        typeSelect.addEventListener('change', updateUI);
+        tInput.addEventListener('input', updateUI);
+        dInput.addEventListener('input', updateUI);
+        hInput.addEventListener('input', updateUI);
+        actualInput.addEventListener('input', updateUI);
+
+        updateUI();
+    </script>
+</body>
+</html>
