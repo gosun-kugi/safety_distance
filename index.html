@@ -78,7 +78,7 @@
           </a>
         </div>
         <div class="text-xs text-slate-400">
-          安全規格群との統合検討
+          安全規格群との統合検討（中間値は安全側に自動丸め判定）
         </div>
       </div>
     </div>
@@ -183,7 +183,7 @@
 
         <div class="space-y-3">
           <div class="flex justify-between items-center text-sm border-b border-white/10 pb-2">
-            <span class="text-slate-300">現在の要求安全距離 (最小値)</span>
+            <span class="text-slate-300">安全要求距離 (安全側丸め)</span>
             <span id="req-distance-val" class="text-lg font-bold text-yellow-300">--- mm</span>
           </div>
           <div class="flex justify-between items-center text-sm border-b border-white/10 pb-2">
@@ -209,7 +209,7 @@
               <i class="fa-solid fa-table text-blue-600"></i>
               JIS B 9718:2013 規格表（対応箇所のハイライト）
             </h3>
-            <p class="text-xs text-slate-500 mt-1">選択・変量されたパラメータに該当するマトリクス位置を青枠・背景で強調表示します。</p>
+            <p class="text-xs text-slate-500 mt-1">選択・変量されたパラメータに該当するマトリクス位置を青枠・背景で強調表示します。（中間値は安全要求が最も厳しくなる値に丸めて評価します）</p>
           </div>
           <div class="flex items-center gap-4 text-xs">
             <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-blue-100 border border-blue-500 rounded"></span>現在値が対応するセル</span>
@@ -266,11 +266,11 @@
     const metadata = {
       case1: {
         title: "保護構造物越えの到達（高リスク危険源）",
-        desc: "JIS B 9718 表2（高リスク危険源）に基づく、防護壁の高さ(b)と、危険区域の高さ(a)から、必要となる水平距離(c)の最小安全距離を判定します。",
+        desc: "JIS B 9718 表2（高リスク危険源）に基づく、防護壁の高さ(b)と、危険区域の高さ(a)から、必要となる水平距離(c)の最小安全距離を判定します。中間値は常に安全側（厳しい条件）へ丸めます。",
         sliders: [
-          { key: 'a', label: '危険区域の高さ (a)', min: 0, max: 2700, step: 100, unit: 'mm' },
-          { key: 'b', label: '保護構造物の高さ (b)', min: 1000, max: 2700, step: 100, unit: 'mm' },
-          { key: 'c', label: '水平距離 (c) [設計値]', min: 0, max: 1500, step: 50, unit: 'mm' }
+          { key: 'a', label: '危険区域の高さ (a)', min: 0, max: 2700, step: 10, unit: 'mm' }, // 中間値を扱いやすくするためステップを10に
+          { key: 'b', label: '保護構造物の高さ (b)', min: 1000, max: 2700, step: 10, unit: 'mm' }, // ステップを10に
+          { key: 'c', label: '水平距離 (c) [設計値]', min: 0, max: 1500, step: 10, unit: 'mm' }
         ]
       },
       case2: {
@@ -288,7 +288,7 @@
       },
       case3: {
         title: "定形開口部を通過しての到達 (14歳以上)",
-        desc: "JIS B 9718 表4に基づく、14歳以上の人が定形開口部（スリット・矩形・円形）を通過して、上肢を差し入れた場合の必要な最小安全距離(sr)を判定します。",
+        desc: "JIS B 9718 表4に基づく、14歳以上の人が定形開口部（スリット・矩形・円形）を通過して、上肢を差し入れた場合の必要な最小安全距離(sr)を判定します。中間値は安全側に丸めます。",
         sliders: [
           { key: 'shape', label: '開口部の形状', type: 'select', options: [
             { value: 'slot', label: 'スリット状 (隙間)' },
@@ -301,7 +301,7 @@
       },
       case4: {
         title: "下肢による定形開口部を通過しての到達",
-        desc: "JIS B 9718 表5に基づく、足（つま先、足関節など）を開口部に差し入れた場合の必要な最小安全距離を判定します。（上肢のアクセスが想定されない場合に限る）",
+        desc: "JIS B 9718 表5に基づく、足（つま先、足関節など）を開口部に差し入れた場合の必要な最小安全距離を判定します。中間値は安全側に丸めます。（上肢のアクセスが想定されない場合に限る）",
         sliders: [
           { key: 'shape', label: '開口部の形状', type: 'select', options: [
             { value: 'slot', label: 'スリット状' },
@@ -500,8 +500,11 @@
       if (currentTab === 1) {
         const { a, b, c } = params.case1;
         
-        const matchedA = findNearestJisVal(a, jisTable2.a_vals);
-        const matchedB = findNearestJisVal(b, jisTable2.b_vals);
+        // --- 安全側丸めロジック ---
+        // 危険区域の高さ a：中間値の場合、必要安全距離が大きくなる方にマッピング
+        // 保護構造物の高さ b：中間値の場合、防護壁が低い（安全距離が長く必要になる）方にマッピング
+        const matchedA = findSafeSideA(a);
+        const matchedB = findSafeSideB(b);
         
         requiredD = jisTable2.data[matchedB][matchedA];
         actualD = c;
@@ -511,8 +514,8 @@
           safetyTip = "安全です。保護構造物が高いため、乗り越えによる危険区域への進入は想定されません。";
         } else {
           safetyTip = isSafe 
-            ? `防護壁の高さ ${b}mm に対し、安全要求距離 ${requiredD}mm を満たしています（設計値 ${actualD}mm）。`
-            : `防護壁の高さ ${b}mm に対して、安全距離が不足しています。あと ${requiredD - actualD}mm 水平に離す必要があります。`;
+            ? `防護壁の高さ ${b}mm (安全評価用: ${matchedB}mm) に対し、安全要求距離 ${requiredD}mm を満たしています（設計値 ${actualD}mm）。`
+            : `防護壁の高さ ${b}mm に対し、安全距離が不足しています。安全設計(丸め後)に基づき、あと ${requiredD - actualD}mm 水平に離す必要があります。`;
         }
 
         highlightTable1(matchedA, matchedB);
@@ -534,14 +537,16 @@
       } else if (currentTab === 3) {
         const { shape, e, actualDistance } = params.case3;
         
-        const range = jisTable3Data[shape].find(r => e > r.min && e <= r.max);
+        // --- 開口部 安全側丸めロジック ---
+        // 境界値または中間値の際、より長い安全距離(sr)が必要なステップを選択
+        const range = findSafeSideTable3Range(shape, e);
         requiredD = range ? range.sr : 850;
         actualD = actualDistance;
         isSafe = actualD >= requiredD;
 
         safetyTip = isSafe
           ? `開口寸法 e=${e}mm における必要距離 ${requiredD}mm 以上が確保されています。`
-          : `開口寸法 e=${e}mm の場合、安全距離が ${requiredD}mm 必要です。現在 ${requiredD - actualD}mm 不足しています。`;
+          : `開口寸法 e=${e}mm の場合、安全側評価により安全距離が ${requiredD}mm 必要です。現在 ${requiredD - actualD}mm 不足しています。`;
 
         highlightTable3(shape, e);
         drawCase3();
@@ -549,7 +554,8 @@
       } else if (currentTab === 4) {
         const { shape, e, actualDistance } = params.case4;
         
-        const range = jisTable4Data[shape].find(r => e >= r.min && e <= r.max);
+        // --- 下肢開口部 安全側丸めロジック ---
+        const range = findSafeSideTable4Range(shape, e);
         requiredD = range ? range.sr : 1100;
         actualD = actualDistance;
         isSafe = actualD >= requiredD;
@@ -593,8 +599,79 @@
       }
     }
 
-    function findNearestJisVal(val, arr) {
-      return arr.reduce((prev, curr) => Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev);
+    // --- 中間値を安全側にマッピングするヘルパー ---
+
+    // 危険源の高さ(a)用安全側選択
+    // 中間値の場合、防護壁bの各行に対して「要求安全距離がより大きくなる方のa」を選択
+    function findSafeSideA(val) {
+      if (jisTable2.a_vals.includes(val)) return val;
+      
+      // valより大きい値と小さい値を取得
+      const larger = jisTable2.a_vals.filter(v => v > val).pop(); // 降順配列なのでpopで最小の「valより大きい値」
+      const smaller = jisTable2.a_vals.filter(v => v < val)[0];  // 降順配列なので最初の要素が「valより小さい値」
+
+      if (larger === undefined) return smaller;
+      if (smaller === undefined) return larger;
+
+      // すべてのbに対して、要求距離の総和または最大値が大きい方を安全側(厳しい側)と判定
+      let sumLarger = 0;
+      let sumSmaller = 0;
+      jisTable2.b_vals.forEach(b => {
+        sumLarger += jisTable2.data[b][larger] || 0;
+        sumSmaller += jisTable2.data[b][smaller] || 0;
+      });
+
+      return sumLarger >= sumSmaller ? larger : smaller;
+    }
+
+    // 保護構造物の高さ(b)用安全側選択
+    // 中間値の場合、安全要求距離がより大きくなる(防護壁が低い)側のbを選択
+    function findSafeSideB(val) {
+      if (jisTable2.b_vals.includes(val)) return val;
+
+      // 降順配列 [2700, 2500, ...] から探索
+      const larger = jisTable2.b_vals.filter(v => v > val).pop(); // valより大きい中での最小
+      const smaller = jisTable2.b_vals.filter(v => v < val)[0];  // valより小さい中での最大
+
+      if (larger === undefined) return smaller;
+      if (smaller === undefined) return larger;
+
+      // 壁は「低い(smaller)」ほうが要求安全距離(c)が厳しく（長く）なるため、smallerを安全側とする
+      return smaller;
+    }
+
+    // 表3用の安全側判定 (開口寸法eが境界・中間値のときに安全要求srが大きいほうを選択)
+    function findSafeSideTable3Range(shape, e) {
+      const stepRanges = jisTable3Data[shape];
+      // まず合致する範囲を取得
+      let matched = stepRanges.filter(r => e > r.min && e <= r.max);
+      
+      if (matched.length === 1) {
+        return matched[0];
+      } else if (matched.length > 1) {
+        // 重複があればsrが大きい方を返す
+        return matched.reduce((prev, curr) => prev.sr > curr.sr ? prev : curr);
+      }
+      
+      // 範囲外の極端なケース
+      if (e <= 4) return { min: 0, max: 4, sr: 0 };
+      return { min: 40, max: 120, sr: 850 };
+    }
+
+    // 表4用の安全側判定 (下肢開口寸法eが境界・中間値のときに安全要求srが大きいほうを選択)
+    function findSafeSideTable4Range(shape, e) {
+      const stepRanges = jisTable4Data[shape];
+      // eがステップ境界上のとき、大きい方のsrを選択するように判定
+      let matched = stepRanges.filter(r => e >= r.min && e <= r.max);
+      
+      if (matched.length === 1) {
+        return matched[0];
+      } else if (matched.length > 1) {
+        return matched.reduce((prev, curr) => prev.sr > curr.sr ? prev : curr);
+      }
+
+      if (e <= 5) return { min: 0, max: 5, sr: 0 };
+      return { min: 189, max: 300, sr: 1100 };
     }
 
     // --- 各テーブルロード ＆ 表示 ---
@@ -777,7 +854,7 @@
       }
     }
 
-    // --- テーブル3のハイライト ---
+    // --- テーブル3のハイライト（安全側判定に対応） ---
     function highlightTable3(shape, e) {
       const highlighted = document.querySelectorAll('.highlight-cell, .highlight-row');
       highlighted.forEach(el => el.classList.remove('highlight-cell', 'highlight-row'));
@@ -794,6 +871,7 @@
         { min: 40, max: 120 }
       ];
 
+      // 安全側丸めに準拠したインデックス探索
       let matchedIdx = steps.findIndex(s => e > s.min && e <= s.max);
       if (e <= 4) matchedIdx = 0;
       if (e > 120) matchedIdx = 8;
@@ -807,7 +885,7 @@
       }
     }
 
-    // --- テーブル4のハイライト ---
+    // --- テーブル4のハイライト（安全側判定に対応） ---
     function highlightTable4(shape, e) {
       const highlighted = document.querySelectorAll('.highlight-cell, .highlight-row');
       highlighted.forEach(el => el.classList.remove('highlight-cell', 'highlight-row'));
@@ -825,6 +903,7 @@
         { min: 189, max: 300 }
       ];
 
+      // 境界値でも安全要求が厳しい側の行がハイライトされるよう、境界の包含を判定
       let matchedIdx = steps4.findIndex(s => e >= s.min && e <= s.max);
       if (e > 300) matchedIdx = 9;
 
@@ -855,8 +934,9 @@
       const hazardY = floorY - (a * scale);
       const wallY = floorY - (b * scale);
 
-      const matchedA = findNearestJisVal(a, jisTable2.a_vals);
-      const matchedB = findNearestJisVal(b, jisTable2.b_vals);
+      // ビジュアル的にも安全側評価用の数値をガイド表示
+      const matchedA = findSafeSideA(a);
+      const matchedB = findSafeSideB(b);
       const reqC = jisTable2.data[matchedB][matchedA];
       
       const reqX = wallX + (reqC * scale);
@@ -908,13 +988,13 @@
           <rect x="${wallX}" y="${floorY - 4}" width="${reqC * scale}" height="8" fill="#ef4444" fill-opacity="0.2" />
           <line x1="${reqX}" y1="${floorY}" x2="${reqX}" y2="${floorY - 65}" stroke="#ef4444" stroke-width="2.5" />
           <polygon points="${reqX},${floorY - 65} ${reqX - 5},${floorY - 73} ${reqX + 5},${floorY - 73}" fill="#ef4444" />
-          <text x="${reqX}" y="${floorY - 78}" fill="#ef4444" font-size="10" font-weight="bold" text-anchor="middle">JIS要求:${reqC}mm</text>
+          <text x="${reqX}" y="${floorY - 78}" fill="#ef4444" font-size="10" font-weight="bold" text-anchor="middle">JIS安全要求:${reqC}mm</text>
         ` : `
           <text x="${wallX + 10}" y="${floorY - 50}" fill="#10b981" font-size="10" font-weight="bold">要求安全距離: 0mm (進入不可)</text>
         `}
       `;
 
-      // 人体
+      // 人体モデルの座標調整
       const shoulderX = wallX - 110;
       const shoulderY = floorY - (1450 * scale);
       const armElbowX = wallX - 10;
@@ -1042,7 +1122,7 @@
       const startX = 200;
       const centerY = 180;
 
-      const range = jisTable3Data[shape].find(r => e > r.min && e <= r.max);
+      const range = findSafeSideTable3Range(shape, e);
       const reqSr = range ? range.sr : 850;
       const isSafe = actualDistance >= reqSr;
 
@@ -1124,7 +1204,7 @@
       const startX = 220;
       const centerY = 180;
 
-      const range = jisTable4Data[shape].find(r => e >= r.min && e <= r.max);
+      const range = findSafeSideTable4Range(shape, e);
       const reqSr = range ? range.sr : 1100;
       const isSafe = actualDistance >= reqSr;
 
